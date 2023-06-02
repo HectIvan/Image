@@ -1,0 +1,4 @@
+﻿  IMAGE.cpp
+C:\Users\theun\Documents\Visual Studio Projects\Image\Image\IMAGE.cpp(65,7): warning C4101: 'fname': unreferenced local variable
+C:\Users\theun\Documents\Visual Studio Projects\Image\Image\IMAGE.cpp(86): warning C4715: 'IMAGE::OpenImage': not all control paths return a value
+  Image.vcxproj -> C:\Users\theun\Documents\Visual Studio Projects\Image\x64\Debug\Image.exe
