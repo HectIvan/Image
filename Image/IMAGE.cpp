@@ -1,14 +1,16 @@
 #include "IMAGE.h"
 #include <fstream>
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb-master/stb_image.h>
+#include "stb_image.h"
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 // potencia de 2, multiplo de 4
 
 IMAGE::IMAGE()
 {
 	m_width = 100;
 	m_height = 100;
-	m_name = "C:/Users/theun/Documents/Visual Studio Projects/Image/Image/";
+	m_name = "";
 	m_BPP = 3;
 }
 
@@ -29,7 +31,7 @@ std::string IMAGE::AskForFileName(std::string& name)
 
 void IMAGE::ResetName()
 {
-	m_name = "C:/Users/theun/Documents/Visual Studio Projects/Image/Image/";
+	m_name = "";
 }
 
 void IMAGE::OpenImage(const std::string& fileName)
@@ -48,19 +50,20 @@ void IMAGE::OpenImage(const std::string& fileName)
 	BITMAPINFOHEADER info;
 	openFile.read(reinterpret_cast<char*>(&bmfh), sizeof(BITMAPFILEHEADER));
 	openFile.read(reinterpret_cast<char*>(&info), sizeof(BITMAPINFOHEADER));
+	openFile.seekg(bmfh.bfOffBits);
 
 	if (bmfh.bfType != 0x4d42)
 	{
-		std::cout << "File not BMP file" << std::endl;
+		//std::cout << "File not BMP file" << std::endl;
+		MessageBoxA(nullptr, "File not BMP file", "Error!!!", MB_OK);
 		openFile.close();
 		return;
 	}
 
 	m_width = info.biWidth;
 	m_height = info.biHeight;
-	int bpp = info.biBitCount;
-	m_BPP = bpp / 8;
-	// iuc3wgvb4yrbge43wfug32ufhw
+	m_BPP = info.biBitCount >> 3;
+
 	m_pixMatrix.resize(m_width * m_height);
 	const int pA = ((4 - (m_width * m_BPP) % 4) % 4);
 	// insert values in vector
@@ -68,14 +71,9 @@ void IMAGE::OpenImage(const std::string& fileName)
 	{
 		for (int j = 0; j < m_width; ++j)
 		{
-			if (m_BPP != 3)
+			if (m_BPP == 4)
 			{
-				unsigned char color[4];
-				openFile.read(reinterpret_cast<char*>(color), 4);
-				m_pixMatrix[i * m_width + j].m_A = static_cast<unsigned char>(color[3]);
-				m_pixMatrix[i * m_width + j].m_R = static_cast<unsigned char>(color[2]);
-				m_pixMatrix[i * m_width + j].m_G = static_cast<unsigned char>(color[1]);
-				m_pixMatrix[i * m_width + j].m_B = static_cast<unsigned char>(color[0]);
+			  openFile.read((char*)&m_pixMatrix[0], m_width * m_height * m_BPP);
 			}
 			else
 			{
@@ -91,7 +89,7 @@ void IMAGE::OpenImage(const std::string& fileName)
 	openFile.close();
 }
 
-int IMAGE::SaveImage(const std::string& fileName, int x = 0, int y = 0)
+int IMAGE::SaveImage(const std::string& fileName, int x, int y)
 {
 	// open file
 	std::ofstream createFile;
@@ -110,7 +108,7 @@ int IMAGE::SaveImage(const std::string& fileName, int x = 0, int y = 0)
 
 	// create file sizes
 	unsigned char bmpPad[4] = { 0, 0, 0, 0 };
-	const int pA = ((4 - (m_width * m_BPP) % 4) % 4);
+	const int pA = 0;// ((4 - (m_width * m_BPP) % 4) % 4);
 	const int fileHeaderSize = 14;
 	const int infoHeaderSize = 40;
 
@@ -134,7 +132,7 @@ int IMAGE::SaveImage(const std::string& fileName, int x = 0, int y = 0)
 	info.biWidth = m_width;
 	info.biHeight = m_height;
 	info.biPlanes = 1;
-	info.biBitCount = m_BPP * 8;
+	info.biBitCount = 32;
 	info.biCompression = BI_RGB;
 	info.biSizeImage = 0;
 	info.biXPelsPerMeter = 2834;
@@ -145,8 +143,10 @@ int IMAGE::SaveImage(const std::string& fileName, int x = 0, int y = 0)
 	// create files
 	createFile.write(reinterpret_cast<char*>(&bmfh), fileHeaderSize);
 	createFile.write(reinterpret_cast<char*>(&info), infoHeaderSize);
+	createFile.write(reinterpret_cast<char*>(&m_pixMatrix[0]), m_width * m_height * 4);
 
 	//m_pixMatrix.resize(m_width * m_height);
+	/*
 	for (int i = 0; i < m_height; ++i)
 	{
 		for (int j = 0; j < m_width; ++j)
@@ -157,16 +157,20 @@ int IMAGE::SaveImage(const std::string& fileName, int x = 0, int y = 0)
 			unsigned char alpha = static_cast<unsigned char>(GetPixel(j, i).m_A);
 			if ('0' == alpha)
 			{
-				red = '255';
-				green = '255';
-				blue = '255';
+				red = 255;
+				green = 255;
+				blue = 255;
 			}
 			unsigned char color[] = { blue, green, red, alpha };
 			createFile.write(reinterpret_cast<char*>(color), 4);
 		}
 		createFile.write(reinterpret_cast<char*>(bmpPad), pA);
 	}
+	*/
+
 	createFile.close();
+
+	return 0;
 }
 
 // replaces pixel in 
