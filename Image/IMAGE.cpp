@@ -1,5 +1,7 @@
 #include "IMAGE.h"
 #include <fstream>
+#include <cmath>
+#include <algorithm>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #define WIN32_LEAN_AND_MEAN
@@ -187,4 +189,52 @@ COLOR IMAGE::GetPixel(int& X, int& Y) const
 	return m_pixMatrix[Y * m_width + X];
 }
 
+// scales of image array
+void IMAGE::Scale(int sca)
+{
+	
+}
+
+// rotation of image array
+void IMAGE::Rotation(int rot)
+{
+	// cosinus & sinus of angle / producto punto
+}
+
+// dims the image array
+void IMAGE::Dim(float dimFactor)
+{
+	dimFactor = std::clamp(dimFactor, 0.0f, 1.0f);
+	for (int i = 0; i < m_pixMatrix.size(); ++i)
+	{
+		m_pixMatrix[i].m_R *= dimFactor;
+		m_pixMatrix[i].m_G *= dimFactor;
+		m_pixMatrix[i].m_B *= dimFactor;
+	}
+}
+
+void IMAGE::GrayScale()
+{
+	for (int i = 0; i < m_pixMatrix.size(); ++i)
+	{
+		m_pixMatrix[i].m_R = (m_pixMatrix[i].m_R  + m_pixMatrix[i].m_G + m_pixMatrix[i].m_B) / 3;
+		m_pixMatrix[i].m_G = (m_pixMatrix[i].m_R + m_pixMatrix[i].m_G + m_pixMatrix[i].m_B) / 3;
+		m_pixMatrix[i].m_B = (m_pixMatrix[i].m_R + m_pixMatrix[i].m_G + m_pixMatrix[i].m_B) / 3;
+	}
+}
+void IMAGE::CreateBlank()
+{
+	int x, y;
+	std::cout << "image size" << std::endl;
+	std::cin >> x >> y;
+	m_pixMatrix.resize(x * y);
+	m_height = y;
+	m_width = x;
+	for (int i = 0; i < m_pixMatrix.size(); ++i)
+	{
+		m_pixMatrix[i].m_R = 255;
+		m_pixMatrix[i].m_G = 255;
+		m_pixMatrix[i].m_B = 255;
+	}
+}
 // based on "Designed by Hugo." (22 jan 2021). Creating a Bitmap Image (.bmp) using C++ | Tutorial. Youtube. https://www.youtube.com/watch?v=vqT5j38bWGg&t=999s&ab_channel=DesignedbyHugo && https://www.youtube.com/watch?v=NcEE5xmpgQ0&t=713s&ab_channel=DesignedbyHugo

@@ -21,4 +21,11 @@ public:
 	void OpenImage(const std::string& fileName);
 	void PutPixel(int x, int y, int width, COLOR color);
 	COLOR GetPixel(int& X, int& Y) const;
+
+	void Scale(int sca);
+	void Rotation(int rot);
+	void Dim(float dimFactor);
+	void PlaceImage();
+	void GrayScale();
+	void CreateBlank();
 };
