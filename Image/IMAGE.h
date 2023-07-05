@@ -9,7 +9,11 @@ class IMAGE
 public:
 	int m_height;
 	int m_width;
+	int m_blankHeight;
+	int m_blankWidth;
 	int m_BPP;
+	bool m_createdFile;
+	std::vector<COLOR> m_blankMatrix;
 	std::vector<COLOR> m_pixMatrix;
 	std::string m_name;
 

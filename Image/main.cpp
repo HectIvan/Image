@@ -34,7 +34,13 @@ int main()
 			image.Dim(dimVal);
 			break;
 		case 'p':
-			//image.PlaceImage();
+			if (image.m_createdFile) {
+				image.PlaceImage();
+			}
+			else
+			{
+				std::cout << "blank project not created";
+			}
 			break;
 		case 'g':
 			image.GrayScale();

@@ -14,6 +14,7 @@ IMAGE::IMAGE()
 	m_height = 100;
 	m_name = "";
 	m_BPP = 3;
+	m_createdFile = false;
 }
 
 IMAGE::~IMAGE()
@@ -88,11 +89,16 @@ void IMAGE::OpenImage(const std::string& fileName)
 		}
 		openFile.ignore(pA);
 	}
+	ResetName();
 	openFile.close();
 }
 
 int IMAGE::SaveImage(const std::string& fileName, int x, int y)
 {
+	// pass info
+	m_pixMatrix = m_blankMatrix;
+	m_width = m_blankHeight;
+	m_height = m_blankHeight;
 	// open file
 	std::ofstream createFile;
 	createFile.open(fileName, std::ios::out | std::ios::binary);
@@ -213,6 +219,48 @@ void IMAGE::Dim(float dimFactor)
 	}
 }
 
+void IMAGE::PlaceImage()
+{
+	if (m_pixMatrix.size() == 0)
+	{
+		std::cout << "no image loaded" << std::endl;
+		return;
+	}
+	int x, y;
+	std::cout << "image poition" << std::endl << "X > ";
+	std::cin >> x;
+	std::cout << std::endl << "Y > ";
+	std::cin >> y;
+
+	int yPos = 0;
+	int xPos = 0;
+	for (int i = 0; i < m_blankMatrix.size(); ++i)
+	{
+		if (i == m_width) {
+			++yPos;
+			xPos = 0;
+		}
+
+		if (xPos == x && yPos == y)
+		{
+			break;
+		}
+		++xPos;
+	}
+
+	int manager = 0;
+	for (int i = yPos * xPos; i < m_blankMatrix.size(); ++i)
+	{
+		m_blankMatrix[i] = m_pixMatrix[manager];
+		++manager;
+		if (manager >= m_width)
+		{
+			manager += m_blankWidth;
+			i += m_blankWidth;
+		}
+	}
+}
+
 void IMAGE::GrayScale()
 {
 	for (int i = 0; i < m_pixMatrix.size(); ++i)
@@ -225,16 +273,19 @@ void IMAGE::GrayScale()
 void IMAGE::CreateBlank()
 {
 	int x, y;
-	std::cout << "image size" << std::endl;
-	std::cin >> x >> y;
-	m_pixMatrix.resize(x * y);
-	m_height = y;
-	m_width = x;
-	for (int i = 0; i < m_pixMatrix.size(); ++i)
+	std::cout << "image size" << std::endl << "X > ";
+	std::cin >> x;
+	std::cout << std::endl << "Y > ";
+	std::cin >> y;
+	m_blankMatrix.resize(x * y);
+	m_blankHeight = y;
+	m_blankWidth = x;
+	for (int i = 0; i < m_blankMatrix.size(); ++i)
 	{
-		m_pixMatrix[i].m_R = 255;
-		m_pixMatrix[i].m_G = 255;
-		m_pixMatrix[i].m_B = 255;
+		m_blankMatrix[i].m_R = 255;
+		m_blankMatrix[i].m_G = 255;
+		m_blankMatrix[i].m_B = 255;
 	}
+	m_createdFile = true;
 }
 // based on "Designed by Hugo." (22 jan 2021). Creating a Bitmap Image (.bmp) using C++ | Tutorial. Youtube. https://www.youtube.com/watch?v=vqT5j38bWGg&t=999s&ab_channel=DesignedbyHugo && https://www.youtube.com/watch?v=NcEE5xmpgQ0&t=713s&ab_channel=DesignedbyHugo
