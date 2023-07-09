@@ -18,22 +18,22 @@ int main()
 		a = tolower(a);
 		switch (a)
 		{
-		case 'c':
+		case 'n': // new
 			image.CreateBlank();
 			break;
-		case 'o':
+		case 'o': // open
 			image.OpenImage(image.AskForFileName(image.m_name));
 			break;
-		case 's':
+		case 's': // save
 			image.SaveImage(image.AskForFileName(image.m_name));
 			break;
-		case 'd':
+		case 'd': // dim
 			std::cout << "dim level> ";
 			float dimVal;
 			std::cin >> dimVal;
 			image.Dim(dimVal);
 			break;
-		case 'p':
+		case 'p': //´place
 			if (image.m_createdFile) {
 				image.PlaceImage();
 			}
@@ -42,7 +42,7 @@ int main()
 				std::cout << "blank project not created";
 			}
 			break;
-		case 'g':
+		case 'g': // gray scale
 			image.GrayScale();
 			break;
 		default:

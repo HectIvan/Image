@@ -40,19 +40,20 @@ void IMAGE::ResetName()
 void IMAGE::OpenImage(const std::string& fileName)
 {
 	// open file
-	std::ifstream openFile;
+	std::fstream openFile;
 	openFile.open(fileName, std::ios::binary | std::ios::in);
 	if (!openFile.is_open())
 	{
 		std::cout << "Failed to open file" << std::endl;
+		ResetName();
 		return;
 	}
 
 	// verify if bmp file
 	BITMAPFILEHEADER bmfh;
 	BITMAPINFOHEADER info;
-	openFile.read(reinterpret_cast<char*>(&bmfh), sizeof(BITMAPFILEHEADER));
-	openFile.read(reinterpret_cast<char*>(&info), sizeof(BITMAPINFOHEADER));
+	openFile.read(reinterpret_cast<char*>(&bmfh), sizeof(&bmfh));
+	openFile.read(reinterpret_cast<char*>(&info), sizeof(&info));
 	openFile.seekg(bmfh.bfOffBits);
 
 	if (bmfh.bfType != 0x4d42)
@@ -68,11 +69,22 @@ void IMAGE::OpenImage(const std::string& fileName)
 	m_BPP = info.biBitCount >> 3;
 
 	m_pixMatrix.resize(m_width * m_height);
-	const int pA = ((4 - (m_width * m_BPP) % 4) % 4);
+	//const int pA = ((4 - (m_width * m_BPP) % 4) % 4);
+	
+
+	int padding = GetPitch() % 4;
+	int lineMemoryWidth = GetPitch() + padding;
 	// insert values in vector
-	for (int i = 0; i < m_height; ++i)
+	for (int line = m_height - 1; line >= 0; --line)
 	{
-		for (int j = 0; j < m_width; ++j)
+		openFile.seekp(lineMemoryWidth * line + bmfh.bfOffBits);
+		openFile.read(reinterpret_cast<char*>(&m_pixMatrix[GetPitch() * line]), GetPitch());
+	}
+	//for (int i = 0; i < m_height; ++i)
+	/*for (int i = m_height - 1; i >= 0; --i)
+	{
+		//for (int j = 0; j < m_width; ++j)
+		for (int j = m_width - 1; j >= 0; --j)
 		{
 			if (m_BPP == 4)
 			{
@@ -88,9 +100,9 @@ void IMAGE::OpenImage(const std::string& fileName)
 			}
 		}
 		openFile.ignore(pA);
-	}
-	ResetName();
+	}*/
 	openFile.close();
+	ResetName();
 }
 
 int IMAGE::SaveImage(const std::string& fileName, int x, int y)
@@ -249,15 +261,27 @@ void IMAGE::PlaceImage()
 	}
 
 	int manager = 0;
-	for (int i = yPos * xPos; i < m_blankMatrix.size(); ++i)
+	int yLine = 0;
+	int imageProjection = 0;
+	//for (int i = yPos * xPos; i < m_blankMatrix.size(); ++i)
+	for (int i = m_blankMatrix.size(); i < yPos * xPos; --i)
 	{
-		m_blankMatrix[i] = m_pixMatrix[manager];
+		if (imageProjection < m_pixMatrix.size())
+		{
+			m_blankMatrix[i] = m_pixMatrix[imageProjection];
+		}
 		++manager;
 		if (manager >= m_width)
 		{
-			manager += m_blankWidth;
-			i += m_blankWidth;
+			manager = 1;
+			i += -m_width + m_blankWidth;// +m_width - yLine;
+			++yLine;
 		}
+		//if (manager >= m_height)
+		//{
+		//	break;
+		//}
+		++imageProjection;
 	}
 }
 

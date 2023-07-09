@@ -25,6 +25,7 @@ public:
 	void OpenImage(const std::string& fileName);
 	void PutPixel(int x, int y, int width, COLOR color);
 	COLOR GetPixel(int& X, int& Y) const;
+	int GetPitch() { return m_width * m_BPP; }
 
 	void Scale(int sca);
 	void Rotation(int rot);
