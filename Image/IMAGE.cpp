@@ -41,6 +41,8 @@ void IMAGE::OpenImage(const std::string& fileName)
 	fstream openFile(fileName.c_str(), std::ios::binary | std::ios::in);
 	//openFile.open(fileName.c_str(), std::ios::binary | std::ios::in);
 	bool open = openFile.is_open();
+
+	// check if file opened
 	assert(open);
 	if (!openFile.is_open())
 	{
@@ -52,34 +54,38 @@ void IMAGE::OpenImage(const std::string& fileName)
 	// verify if bmp file
 	BITMAPFILEHEADER bmfh;
 	BITMAPINFOHEADER info;
-	openFile.read(reinterpret_cast<char*>(&bmfh), sizeof(&bmfh));
-	openFile.read(reinterpret_cast<char*>(&info), sizeof(&info));
-	openFile.seekg(bmfh.bfOffBits);
+	openFile.read(reinterpret_cast<char*>(&bmfh), sizeof(bmfh));
 
 	if (bmfh.bfType != 0x4d42)
 	{
-		//std::cout << "File not BMP file" << std::endl;
 		MessageBoxA(nullptr, "File not BMP file", "Error!!!", MB_OK);
 		openFile.close();
 		return;
 	}
 
+	openFile.read(reinterpret_cast<char*>(&info), sizeof(info));
+	openFile.seekg(bmfh.bfOffBits);
+
+
 	m_width = info.biWidth;
 	m_height = info.biHeight;
 	m_BPP = info.biBitCount >> 3;
-	//size_t resize = m_width * m_height;
-	//m_pixMatrix.resize(resize);
+	size_t resize = m_width * m_height;
+	m_pixMatrix.resize(resize);
 	//const int pA = ((4 - (m_width * m_BPP) % 4) % 4);
 	
 
 	int padding = GetPitch() % 4;
 	int lineMemoryWidth = GetPitch() + padding;
 	// insert values in vector
+	int test = 0;
 	for (int line = m_height - 1; line >= 0; --line)
 	{
+		test++;
 		openFile.seekp(lineMemoryWidth * line + bmfh.bfOffBits);
-		openFile.read(reinterpret_cast<char*>(&m_pixMatrix[GetPitch() * (m_height - 1 -line)]), GetPitch());
+		openFile.read(reinterpret_cast<char*>(&m_pixMatrix[GetWidth() * line]), GetPitch());//(m_height - 1 -line)]), GetPitch());
 	}
+	openFile.seekp(0);
 	//for (int i = 0; i < m_height; ++i)
 	/*for (int i = m_height - 1; i >= 0; --i)
 	{
@@ -101,16 +107,11 @@ void IMAGE::OpenImage(const std::string& fileName)
 		}
 		openFile.ignore(pA);
 	}*/
-	openFile.close();
 	ResetName();
 }
 
 int IMAGE::SaveImage(const std::string& fileName, int x, int y)
 {
-	// pass info
-	//m_pixMatrix = m_blankMatrix;
-	//m_width = m_blankHeight;
-	//m_height = m_blankHeight;
 	// open file
 	std::ofstream createFile;
 	createFile.open(fileName, std::ios::out | std::ios::binary);
