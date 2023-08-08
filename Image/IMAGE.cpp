@@ -6,19 +6,17 @@
 #include "stb_image.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+
+using std::fstream;
 // potencia de 2, multiplo de 4
 
-IMAGE::IMAGE()
+IMAGE::IMAGE(int width, int height, int bpp)
 {
-	m_width = 100;
-	m_height = 100;
+	assert(m_width > 0 && m_width < 16383);
+	assert(m_height > 0 && m_height < 16383);
 	m_name = "";
 	m_BPP = 3;
 	m_createdFile = false;
-}
-
-IMAGE::~IMAGE()
-{
 }
 
 std::string IMAGE::AskForFileName(std::string& name)
@@ -40,8 +38,10 @@ void IMAGE::ResetName()
 void IMAGE::OpenImage(const std::string& fileName)
 {
 	// open file
-	std::fstream openFile;
-	openFile.open(fileName, std::ios::binary | std::ios::in);
+	fstream openFile(fileName.c_str(), std::ios::binary | std::ios::in);
+	//openFile.open(fileName.c_str(), std::ios::binary | std::ios::in);
+	bool open = openFile.is_open();
+	assert(open);
 	if (!openFile.is_open())
 	{
 		std::cout << "Failed to open file" << std::endl;
@@ -67,8 +67,8 @@ void IMAGE::OpenImage(const std::string& fileName)
 	m_width = info.biWidth;
 	m_height = info.biHeight;
 	m_BPP = info.biBitCount >> 3;
-
-	m_pixMatrix.resize(m_width * m_height);
+	//size_t resize = m_width * m_height;
+	//m_pixMatrix.resize(resize);
 	//const int pA = ((4 - (m_width * m_BPP) % 4) % 4);
 	
 
@@ -78,7 +78,7 @@ void IMAGE::OpenImage(const std::string& fileName)
 	for (int line = m_height - 1; line >= 0; --line)
 	{
 		openFile.seekp(lineMemoryWidth * line + bmfh.bfOffBits);
-		openFile.read(reinterpret_cast<char*>(&m_pixMatrix[GetPitch() * line]), GetPitch());
+		openFile.read(reinterpret_cast<char*>(&m_pixMatrix[GetPitch() * (m_height - 1 -line)]), GetPitch());
 	}
 	//for (int i = 0; i < m_height; ++i)
 	/*for (int i = m_height - 1; i >= 0; --i)
@@ -108,9 +108,9 @@ void IMAGE::OpenImage(const std::string& fileName)
 int IMAGE::SaveImage(const std::string& fileName, int x, int y)
 {
 	// pass info
-	m_pixMatrix = m_blankMatrix;
-	m_width = m_blankHeight;
-	m_height = m_blankHeight;
+	//m_pixMatrix = m_blankMatrix;
+	//m_width = m_blankHeight;
+	//m_height = m_blankHeight;
 	// open file
 	std::ofstream createFile;
 	createFile.open(fileName, std::ios::out | std::ios::binary);
@@ -152,11 +152,11 @@ int IMAGE::SaveImage(const std::string& fileName, int x, int y)
 	info.biWidth = m_width;
 	info.biHeight = m_height;
 	info.biPlanes = 1;
-	info.biBitCount = 32;
+	info.biBitCount = static_cast<WORD>(m_BPP * 3);
 	info.biCompression = BI_RGB;
 	info.biSizeImage = 0;
-	info.biXPelsPerMeter = 2834;
-	info.biYPelsPerMeter = 2834;
+	info.biXPelsPerMeter = 3780;
+	info.biYPelsPerMeter = 3780;
 	info.biClrUsed = 0;
 	info.biClrImportant = 0;
 
@@ -194,17 +194,164 @@ int IMAGE::SaveImage(const std::string& fileName, int x, int y)
 }
 
 // replaces pixel in 
-void IMAGE::PutPixel(int x, int y, int width, COLOR color)
+void IMAGE::PutPixel(int x, int y, COLOR color)
 {
-	// find pixel color
-	m_pixMatrix[y * m_width + x] = color;
+	assert(x < 0 && x >= m_width);
+	assert(y < 0 && y >= m_height);
+	assert(m_BPP < 3 && m_BPP > 4);
+	
+	int startPos = GetPitch() * y + (x * m_BPP);
+
+	m_pixMatrix[startPos + 0] = color._color.B;
+	m_pixMatrix[startPos + 1] = color._color.G;
+	m_pixMatrix[startPos + 2] = color._color.R;
+	if (m_BPP == 4) m_pixMatrix[startPos + 3] = color._color.A;
 }
 
 // get pixel in a specific location
-COLOR IMAGE::GetPixel(int& X, int& Y) const
+COLOR IMAGE::GetPixel(int x, int y) const
 {
-	// get colors of pixel
-	return m_pixMatrix[Y * m_width + X];
+	assert(x >= 0 && x < m_width);
+	assert(y >= 0 && y < m_height);
+
+	int startPos = GetPitch() * y + (x * m_BPP);
+	
+	return COLOR(m_pixMatrix[startPos + 2],
+				 m_pixMatrix[startPos + 1],
+				 m_pixMatrix[startPos + 0],
+				 m_BPP == 3 ? 255 : m_pixMatrix[startPos + 3]);
+}
+
+int IMAGE::GetHeight() const
+{
+	return m_height;
+}
+
+int IMAGE::GetWidth() const
+{
+	return m_width;
+}
+
+void IMAGE::BitBlt(const IMAGE& src,
+				   int x, 
+				   int y, 
+				   int srcIniX, 
+				   int srcIniY, 
+				   int srcEndX, 
+				   int srcEndY)
+{
+	if (x < 0) { srcIniX += abs(x); }
+	if (y < 0) { srcIniY += abs(y); }
+	if (x + srcEndX >= m_width) { srcIniX -= (x + srcEndX) - m_width - 1; }
+	if (x + srcEndY >= m_height) { srcIniY -= (y + srcEndY) - m_height - 1; }
+	
+	int minX = min(srcIniX, srcEndX);
+	int minY = min(srcIniY, srcEndY);
+	srcEndX = max(srcIniX, srcEndX);
+	srcEndY = max(srcIniY, srcEndY);
+	srcIniX = minX;
+	srcIniY = minY;
+
+	int realwidth = srcEndX - srcIniX;
+	if (realwidth <= 0 || srcEndY - srcIniY <= 0)
+	{
+		return;
+	}
+
+	int memLineIni = (srcIniX * m_BPP);
+#pragma omp parallel for
+	for (int iY = srcIniY; iY < srcEndY; ++iY)
+	{
+		const char* pSrc = src.GetMemoryPtr() + src.GetPitch() * iY + memLineIni;
+		char* pDest = &m_pixMatrix[GetPitch() * (y + iY) + (x * m_BPP)];
+		memcpy(pDest, pSrc, realwidth + m_BPP);
+	}
+}
+
+void IMAGE::ProcessImage(std::function<LinearColor(const IMAGE&, int, int)> procFunction)
+{
+	IMAGE rt(m_width, m_height, m_BPP);
+
+#pragma omp parallel for  // 
+	for (int iY = 0; iY < m_height; ++iY)
+	{
+		COLOR currColor;
+		for (int iX = 0; iX < m_width; ++iX)
+		{
+			LinearColor color = procFunction(*this, iX, iY);
+			rt.PutPixel(iX, iY, color.ToColor());
+		}
+	}
+
+	*this = std::move(rt); // 
+}
+
+void IMAGE::AdjustToTextureAdress(float& u, float& v, TEXTURE_ADDRESS::E textAddr) const
+{
+	switch (textAddr)
+	{
+	case TEXTURE_ADDRESS::WRAP:
+		u = std::fmodf(u, 1.0f);
+		v = std::fmodf(v, 1.0f);
+		break;
+	case TEXTURE_ADDRESS::MIRROR:
+		if (u < 0.0 || u > 1.0f)
+		{
+			u = 1.0f - std::fmodf(u, 1.0f);
+		}
+		if (v < 0.0 || v > 1.0f)
+		{
+			v = 1.0f - std::fmodf(v, 1.0f);
+		}
+		break;
+	case TEXTURE_ADDRESS::CLAMP:
+		u = std::clamp(u, 0.0f, 1.0f);
+		v = std::clamp(v, 0.0f, 1.0f);
+		break;
+	case TEXTURE_ADDRESS::BORDER:
+		break;
+	case TEXTURE_ADDRESS::MIRROR_ONCE:
+		break;
+	default:
+		break;
+	}
+}
+
+COLOR IMAGE::PointSample(float u, float v, TEXTURE_ADDRESS::E textAddr) const
+{
+	AdjustToTextureAdress(u, v, textAddr);
+
+	int pxX = static_cast<int>((m_width - 1) * u);
+	int pxY = static_cast<int>((m_height - 1) * v);
+
+	return GetPixel(pxX, pxY);
+}
+
+COLOR IMAGE::Linearample(float u, float v, TEXTURE_ADDRESS::E textAddr) const
+{
+	AdjustToTextureAdress(u, v, textAddr);
+
+	float pxX1 = (m_width - 1) * u;
+	float pxY1 = (m_height - 1) * v;
+	int ipxX1 = static_cast<int>(pxX1);
+	int ipxY1 = static_cast<int>(pxY1);
+
+	float xRes1 = pxX1 - ipxX1;
+	float yRes1 = pxY1 - ipxY1;
+
+	int ipxX2 = xRes1 > 0.0f ? ipxX1 + 1 : std::clamp(ipxX1, 0, (m_width - 1));
+	int ipxY2 = yRes1 > 0.0f ? ipxY1 + 1 : std::clamp(ipxY1, 0, (m_height - 1));
+
+	LinearColor Q11(GetPixel(ipxX1, ipxY1));
+	LinearColor Q21(GetPixel(ipxX2, ipxY1));
+	LinearColor Q12(GetPixel(ipxX1, ipxY2));
+	LinearColor Q22(GetPixel(ipxX2, ipxY2));
+
+	LinearColor xy1R = lerp(Q11, Q21, xRes1);
+	LinearColor	xy2R = lerp(Q12, Q22, xRes1);
+	LinearColor fColor = lerp(xy1R, xy2R, yRes1);
+
+	return fColor.ToColor();
 }
 
 // scales of image array
@@ -225,9 +372,7 @@ void IMAGE::Dim(float dimFactor)
 	dimFactor = std::clamp(dimFactor, 0.0f, 1.0f);
 	for (int i = 0; i < m_pixMatrix.size(); ++i)
 	{
-		m_pixMatrix[i].m_R *= dimFactor;
-		m_pixMatrix[i].m_G *= dimFactor;
-		m_pixMatrix[i].m_B *= dimFactor;
+		m_pixMatrix[i] *= dimFactor;
 	}
 }
 
@@ -287,12 +432,13 @@ void IMAGE::PlaceImage()
 
 void IMAGE::GrayScale()
 {
-	for (int i = 0; i < m_pixMatrix.size(); ++i)
+	//vector2D textCoordSize(1.0f / img)
+	/*for (int i = 0; i < m_pixMatrix.size(); ++i)
 	{
 		m_pixMatrix[i].m_R = (m_pixMatrix[i].m_R  + m_pixMatrix[i].m_G + m_pixMatrix[i].m_B) / 3;
 		m_pixMatrix[i].m_G = (m_pixMatrix[i].m_R + m_pixMatrix[i].m_G + m_pixMatrix[i].m_B) / 3;
 		m_pixMatrix[i].m_B = (m_pixMatrix[i].m_R + m_pixMatrix[i].m_G + m_pixMatrix[i].m_B) / 3;
-	}
+	}*/
 }
 void IMAGE::CreateBlank()
 {
@@ -306,10 +452,7 @@ void IMAGE::CreateBlank()
 	m_blankWidth = x;
 	for (int i = 0; i < m_blankMatrix.size(); ++i)
 	{
-		m_blankMatrix[i].m_R = 255;
-		m_blankMatrix[i].m_G = 255;
-		m_blankMatrix[i].m_B = 255;
+		m_blankMatrix[i] = 255;
 	}
 	m_createdFile = true;
 }
-// based on "Designed by Hugo." (22 jan 2021). Creating a Bitmap Image (.bmp) using C++ | Tutorial. Youtube. https://www.youtube.com/watch?v=vqT5j38bWGg&t=999s&ab_channel=DesignedbyHugo && https://www.youtube.com/watch?v=NcEE5xmpgQ0&t=713s&ab_channel=DesignedbyHugo
