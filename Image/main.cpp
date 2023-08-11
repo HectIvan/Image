@@ -23,9 +23,17 @@ COLOR GreyScale(int px, int py, COLOR color)
 	return COLOR(lumInt, lumInt, lumInt);
 }
 
-LinearColor Identity(const IMAGE& img, int pX, int pY);
+LinearColor Identity(const IMAGE& img, int pX, int pY)
+{
+	Vector2D textCoordSize(1.0f / img.GetWidth(), 1.0f / img.GetHeight());
 
-LinearColor Blur(const IMAGE& img, int pX, int pY);
+	return LinearColor(img.PointSample(textCoordSize.x * (pX), textCoordSize.y * (pY)));
+}
+
+LinearColor Blur(const IMAGE& img, int pX, int pY)
+{
+	return LinearColor();
+}
 
 LinearColor SobelX(const IMAGE& img, int pX, int pY)
 {
@@ -60,7 +68,7 @@ LinearColor SobelX(const IMAGE& img, int pX, int pY)
 	return FinalColor;
 }
 
-LinearColor Identity(const IMAGE& img, int pX, int pY)
+/*LinearColor Identity(const IMAGE& img, int pX, int pY)
 {
 	const float kernel[] = { 0,0,0,0,1,0,0,0,0 };
 
@@ -89,13 +97,7 @@ LinearColor Identity(const IMAGE& img, int pX, int pY)
 		p22 * kernel[8];
 
 	return finalColor;
-}
-
-
-LinearColor Blur(const IMAGE& img, int pX, int pY)
-{
-	return LinearColor();
-}
+}*/
 
 LinearColor SobelY(const IMAGE& img, int pX, int pY)
 {
@@ -130,33 +132,51 @@ LinearColor SobelY(const IMAGE& img, int pX, int pY)
 	return FinalColor;
 }
 
-LinearColor NormalMap(const IMAGE& img, int pX, int pY)
+LinearColor NormalMap(const IMAGE& img, int pX, int pY) 
 {
-	Vector2D textCoordSize(1.0f / img.m_width, 1.0f / img.m_height);
+	/*Vector2D textCoordSize(1.0f / img.m_width, 1.0f / img.m_height);
 
 	// sobelX
 	LinearColor p00(img.PointSample(textCoordSize.x * (pX - 1), textCoordSize.y * (pY - 1)));
-	LinearColor p02(img.PointSample(textCoordSize.x * (pX - 1), textCoordSize.y * (pY - 1)));
-	LinearColor p10(img.PointSample(textCoordSize.x * (pX - 1), textCoordSize.y * (pY + 0)));
-	LinearColor p12(img.PointSample(textCoordSize.x * (pX - 1), textCoordSize.y * (pY + 0)));
-	LinearColor p20(img.PointSample(textCoordSize.x * (pX - 1), textCoordSize.y * (pY + 1)));
-	LinearColor p22(img.PointSample(textCoordSize.x * (pX - 1), textCoordSize.y * (pY + 1)));
+	LinearColor p01(img.PointSample(textCoordSize.x * (pX - 1), textCoordSize.y * (pY + 0)));
+	LinearColor p02(img.PointSample(textCoordSize.x * (pX - 1), textCoordSize.y * (pY + 1)));
 
-	LinearColor SobelX = p00 * -1 + p02 * 1 + p10 * -2 + p12 * 2 + p20 * -1 + p22 * 1;
+	LinearColor p20(img.PointSample(textCoordSize.x * (pX + 1), textCoordSize.y * (pY - 1)));
+	LinearColor p21(img.PointSample(textCoordSize.x * (pX + 1), textCoordSize.y * (pY + 0)));
+	LinearColor p22(img.PointSample(textCoordSize.x * (pX + 1), textCoordSize.y * (pY + 1)));
 
-	LinearColor v00(img.PointSample(textCoordSize.x * (pX - 1), textCoordSize.y * (pY - 1)));
-	LinearColor v10(img.PointSample(textCoordSize.x * (pX + 0), textCoordSize.y * (pY - 1)));
-	LinearColor v20(img.PointSample(textCoordSize.x * (pX + 1), textCoordSize.y * (pY - 1)));
-	LinearColor v02(img.PointSample(textCoordSize.x * (pX - 1), textCoordSize.y * (pY + 1)));
-	LinearColor v12(img.PointSample(textCoordSize.x * (pX + 0), textCoordSize.y * (pY + 1)));
-	LinearColor v22(img.PointSample(textCoordSize.x * (pX + 1), textCoordSize.y * (pY + 1)));
 
-	LinearColor SobelY = v00 * 1 + v10 * 2 + v20 * 1 + p12 * -1 + p20 * -2 + p22 * 1;
+	LinearColor p10(img.PointSample(textCoordSize.x * (pX + 0), textCoordSize.y * (pY - 1)));
+	LinearColor p12(img.PointSample(textCoordSize.x * (pX + 0), textCoordSize.y * (pY + 1)));
+
+	LinearColor SobelX = p00 * -1 + p01 * -2 + p02 * -1 + p20 + p21 * 2 + p22;
+	LinearColor SobelY = p00 + p10 * 2 + p20 - p02 + p02 * -2 - p12;
 
 	float lumX = (SobelX.m_R * lsR + SobelX.m_G * lsG + SobelX.m_B * lsB);
 	float lumY = (SobelY.m_R * lsR + SobelY.m_G * lsG + SobelY.m_B * lsB);
 
-	return LinearColor(lumX, lumY, 1.0f);
+	return LinearColor(lumX, lumY, 0.0f);*/
+
+	Vector2D texCoordsSize(1.0f / img.GetWidth(), 1.0f / img.GetHeight());
+
+	LinearColor p00(img.PointSample(texCoordsSize.x * (pX - 1), texCoordsSize.y * (pY - 1)));
+	LinearColor p01(img.PointSample(texCoordsSize.x * (pX), texCoordsSize.y * (pY - 1)));
+	LinearColor p02(img.PointSample(texCoordsSize.x * (pX + 1), texCoordsSize.y * (pY - 1)));
+
+	LinearColor p10(img.PointSample(texCoordsSize.x * (pX - 1), texCoordsSize.y * (pY + 0)));
+	LinearColor p12(img.PointSample(texCoordsSize.x * (pX + 1), texCoordsSize.y * (pY + 0)));
+
+	LinearColor p20(img.PointSample(texCoordsSize.x * (pX - 1), texCoordsSize.y * (pY + 1)));
+	LinearColor p21(img.PointSample(texCoordsSize.x * (pX), texCoordsSize.y * (pY + 1)));
+	LinearColor p22(img.PointSample(texCoordsSize.x * (pX + 1), texCoordsSize.y * (pY + 1)));
+
+	LinearColor sobelX = p00 + 2 * p10 + p20 - p02 - 2 * p12 - p22;
+	LinearColor sobelY = p00 + 2 * p01 + p02 - p20 - 2 * p21 - p22;
+
+	float lumY = (sobelY.m_R * lsR + sobelY.m_G * lsG + sobelY.m_B * lsB);
+	float lumX = (sobelX.m_R * lsR + sobelX.m_G * lsG + sobelX.m_B * lsB);
+
+	return LinearColor(lumX, lumX, lumX);
 }
 
 int main()

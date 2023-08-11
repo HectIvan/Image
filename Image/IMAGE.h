@@ -106,7 +106,7 @@ struct LinearColor final
 
 	LinearColor operator+(const LinearColor& rhs) const
 	{
-		return LinearColor(m_R + rhs.m_R, m_G + rhs.m_G, m_B + rhs.m_G, m_A + rhs.m_A);
+		return LinearColor(m_R + rhs.m_R, m_G + rhs.m_G, m_B + rhs.m_B, m_A + rhs.m_A);
 	}
 
 	LinearColor& operator+=(const LinearColor& rhs)
@@ -120,7 +120,7 @@ struct LinearColor final
 
 	LinearColor operator-(const LinearColor& rhs) const
 	{
-		return LinearColor(m_R - rhs.m_R, m_G - rhs.m_G, m_B - rhs.m_G, m_A - rhs.m_A);
+		return LinearColor(m_R - rhs.m_R, m_G - rhs.m_G, m_B - rhs.m_B, m_A - rhs.m_A);
 	}
 
 	LinearColor& operator-=(const LinearColor& rhs)
@@ -134,7 +134,7 @@ struct LinearColor final
 
 	LinearColor operator*(const LinearColor& rhs) const
 	{
-		return LinearColor(m_R * rhs.m_R, m_G * rhs.m_G, m_B * rhs.m_G, m_A * rhs.m_A);
+		return LinearColor(m_R * rhs.m_R, m_G * rhs.m_G, m_B * rhs.m_B, m_A * rhs.m_A);
 	}
 
 	LinearColor operator*(const float& rhs) const
@@ -153,7 +153,7 @@ struct LinearColor final
 
 	LinearColor operator/(const LinearColor& rhs) const
 	{
-		return LinearColor(m_R / rhs.m_R, m_G / rhs.m_G, m_B / rhs.m_G, m_A / rhs.m_A);
+		return LinearColor(m_R / rhs.m_R, m_G / rhs.m_G, m_B / rhs.m_B, m_A / rhs.m_A);
 	}
 
 	LinearColor& operator/=(const LinearColor& rhs)

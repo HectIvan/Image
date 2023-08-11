@@ -12,10 +12,13 @@ using std::fstream;
 
 IMAGE::IMAGE(int width, int height, int bpp)
 {
-	assert(m_width > 0 && m_width < 16383);
-	assert(m_height > 0 && m_height < 16383);
-	m_name = "";
+	assert(width > 0 && width < 16383);
+	assert(height > 0 && height < 16383);
+	m_height = height;
+	m_width = width;
 	m_BPP = 3;
+	m_pixMatrix.resize(m_width * m_height * m_BPP);
+	m_name = "";
 	m_createdFile = false;
 }
 
@@ -70,7 +73,7 @@ void IMAGE::OpenImage(const std::string& fileName)
 	m_width = info.biWidth;
 	m_height = info.biHeight;
 	m_BPP = info.biBitCount >> 3;
-	size_t resize = m_width * m_height;
+	size_t resize = m_width * m_height * m_BPP;
 	m_pixMatrix.resize(resize);
 	//const int pA = ((4 - (m_width * m_BPP) % 4) % 4);
 	
@@ -78,14 +81,13 @@ void IMAGE::OpenImage(const std::string& fileName)
 	int padding = GetPitch() % 4;
 	int lineMemoryWidth = GetPitch() + padding;
 	// insert values in vector
-	int test = 0;
+	
 	for (int line = m_height - 1; line >= 0; --line)
 	{
-		test++;
 		openFile.seekp(lineMemoryWidth * line + bmfh.bfOffBits);
-		openFile.read(reinterpret_cast<char*>(&m_pixMatrix[GetWidth() * line]), GetPitch());//(m_height - 1 -line)]), GetPitch());
+		openFile.read(reinterpret_cast<char*>(&m_pixMatrix[GetPitch() * (m_height - 1 - line)]), GetPitch());
+	
 	}
-	openFile.seekp(0);
 	//for (int i = 0; i < m_height; ++i)
 	/*for (int i = m_height - 1; i >= 0; --i)
 	{
@@ -133,27 +135,23 @@ int IMAGE::SaveImage(const std::string& fileName, int x, int y)
 	const int fileHeaderSize = 14;
 	const int infoHeaderSize = 40;
 
-	int padding = 0;
-	int scanlines = m_height * m_BPP;
+	int padding = GetPitch() % 4;
+	int lineMemoryWidth = GetPitch() + padding;
 	int newBufferSize = 0;
-	while ((scanlines + padding) % 4 != 0)
-	{
-		padding++;
-	}
 
 	// file type
 	bmfh.bfType = 0x4d42;
 	bmfh.bfReserved1 = 0;
 	bmfh.bfReserved2 = 0;
 	bmfh.bfOffBits = fileHeaderSize + infoHeaderSize;
-	bmfh.bfSize = fileHeaderSize + infoHeaderSize + (m_width * m_height * 4);
+	bmfh.bfSize = fileHeaderSize + infoHeaderSize + (lineMemoryWidth * m_height);
 
 	// file info
 	info.biSize = infoHeaderSize;
 	info.biWidth = m_width;
 	info.biHeight = m_height;
 	info.biPlanes = 1;
-	info.biBitCount = static_cast<WORD>(m_BPP * 3);
+	info.biBitCount = static_cast<WORD>(m_BPP * 8);
 	info.biCompression = BI_RGB;
 	info.biSizeImage = 0;
 	info.biXPelsPerMeter = 3780;
@@ -164,7 +162,13 @@ int IMAGE::SaveImage(const std::string& fileName, int x, int y)
 	// create files
 	createFile.write(reinterpret_cast<char*>(&bmfh), fileHeaderSize);
 	createFile.write(reinterpret_cast<char*>(&info), infoHeaderSize);
-	createFile.write(reinterpret_cast<char*>(&m_pixMatrix[0]), m_width * m_height * 4);
+
+	int dif = 0;
+	for (int line = m_height - 1; line >= 0; --line)
+	{
+		createFile.write(reinterpret_cast<char*>(&m_pixMatrix[GetPitch() * line]), GetPitch());
+		createFile.write(reinterpret_cast<char*>(&dif), padding);
+	}
 
 	//m_pixMatrix.resize(m_width * m_height);
 	/*
@@ -197,9 +201,9 @@ int IMAGE::SaveImage(const std::string& fileName, int x, int y)
 // replaces pixel in 
 void IMAGE::PutPixel(int x, int y, COLOR color)
 {
-	assert(x < 0 && x >= m_width);
-	assert(y < 0 && y >= m_height);
-	assert(m_BPP < 3 && m_BPP > 4);
+	assert(x >= 0 && x < m_width);
+	assert(y >= 0 && y < m_height);
+	assert(m_BPP >= 3 && m_BPP <= 4);
 	
 	int startPos = GetPitch() * y + (x * m_BPP);
 
